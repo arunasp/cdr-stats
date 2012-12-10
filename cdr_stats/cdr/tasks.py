@@ -20,7 +20,7 @@ from cdr.import_cdr_asterisk import import_cdr_asterisk
 from cdr.aggregate import set_concurrentcall_analytic
 from django.core.cache import cache
 from cdr.models import Switch
-from common.only_one_task import only_one
+from cdr.task_lock import only_one
 from datetime import datetime, timedelta
 import sqlite3
 import asterisk.manager
