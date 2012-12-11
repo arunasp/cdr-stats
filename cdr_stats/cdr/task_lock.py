@@ -12,23 +12,30 @@ def only_one(function=None, key="", timeout=None):
 
         def _caller(*args, **kwargs):
             """Caller."""
-	    logger = getLogger(**kwargs)
+            logger = getLogger(**kwargs)
             ret_value = None
-	    # cache.add fails if if the key already exists
-	    # memcache delete is very slow, but we have to use it to take
-	    # advantage of using add() for atomic locking
-    	    have_lock = lambda: cache.add(key, "true", timeout)
-    	    release_lock = lambda: cache.delete(key)
-            try:
-                if have_lock():
-            	    logger.debug("Lock aquired for task : %s" % key)
+            # cache.add fails if if the key already exists
+            # memcache delete is very slow, but we have to use it to take
+            # advantage of using add() for atomic locking
+            have_lock = lambda: str(cache.get(key)) == "true"
+            task_lock = lambda: cache.add(key, "true", timeout)
+            release_lock = lambda: cache.delete(key)
+            if not have_lock():
+                try:
+                    task_lock()
+                    logger.debug("Lock aquired for task : %s(%s)" % (key, args))
                     ret_value = run_func(*args, **kwargs)
-            finally:
-                if have_lock():
-                    release_lock()
-            	    logger.debug("Lock released for task : %s" % key)
-
-            return ret_value
+                except:
+                    logger.error("The task failed to execute: %s(%s)" % (key, args))
+                    ret_value = False
+                finally:
+                    if have_lock():
+                        release_lock()
+                        logger.debug("Lock released for task: %s(%s)" % (key, args))
+                    return ret_value
+            else:
+                    logger.debug("The task is already locked: %s(%s)" % (key, args))
+                    _caller = _dec
 
         return _caller
 
