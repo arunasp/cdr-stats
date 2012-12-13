@@ -25,9 +25,9 @@ def only_one(function=None, key="", timeout=None):
                     task_lock()
                     logger.debug("Lock aquired for task : %s(%s)" % (key, args))
                     ret_value = run_func(*args, **kwargs)
-                except:
-                    logger.error("The task failed to execute: %s(%s)" % (key, args))
-                    ret_value = False
+                except Exception as e:
+                    logger.error("The task failed to execute: %s (%s, %s)" % (e.message, type(e), e))
+                    ret_value = e
                 finally:
                     if have_lock():
                         release_lock()
